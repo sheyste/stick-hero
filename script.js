@@ -18,11 +18,14 @@ let sceneOffset; // Moves the whole game
 
 let platforms = [];
 let sticks = [];
+let buildings = [];
 let trees = [];
 
-// Todo: Save high score to localStorage (?)
+//Save high score to localStorage
+let highScore = localStorage.getItem("highScore") || 0; // Load high score from localStorage
 
 let score = 0;
+
 
 // Configuration
 const canvasWidth = 375;
@@ -62,6 +65,26 @@ const perfectElement = document.getElementById("perfect");
 const restartButton = document.getElementById("restart");
 const scoreElement = document.getElementById("score");
 
+// Pre-defined star coordinates
+const starCoordinates = [
+  { x: 50, y: 70 },
+  { x: 200, y: 150 },
+  { x: 300, y: 300 },
+  { x: 400, y: 100 },
+  { x: 500, y: 250 },
+  { x: 600, y: 400 },
+  { x: 700, y: 50 },
+  { x: 800, y: 200 },
+  { x: 900, y: 350 },
+  { x: 850, y: 170 },
+  { x: 950, y: 320 },
+  { x: 120, y: 90 },
+  { x: 280, y: 160 },
+  { x: 380, y: 250 },
+  // Add more star coordinates as needed
+  // ...
+];
+
 // Initialize layout
 resetGame();
 
@@ -72,6 +95,9 @@ function resetGame() {
   lastTimestamp = undefined;
   sceneOffset = 0;
   score = 0;
+
+  // Initial update of high score display
+  updateHighScoreDisplay();
 
   introductionElement.style.opacity = 1;
   perfectElement.style.opacity = 0;
@@ -87,6 +113,19 @@ function resetGame() {
   generatePlatform();
 
   sticks = [{ x: platforms[0].x + platforms[0].w, length: 0, rotation: 0 }];
+
+  buildings = [];
+  generateBuilding();
+  generateBuilding();
+  generateBuilding();
+  generateBuilding();
+  generateBuilding();
+  generateBuilding();
+  generateBuilding();
+  generateBuilding();
+  generateBuilding();
+  generateBuilding();
+
 
   trees = [];
   generateTree();
@@ -106,8 +145,27 @@ function resetGame() {
   draw();
 }
 
-function generateTree() {
+function generateBuilding() {
   const minimumGap = 30;
+  const maximumGap = 150;
+
+  // X coordinate of the right edge of the furthest building
+  const lastBuilding = buildings[buildings.length - 1];
+  let furthestX = lastBuilding ? lastBuilding.x : 0;
+
+  const x =
+    furthestX +
+    minimumGap +
+    Math.floor(Math.random() * (maximumGap - minimumGap));
+
+  const treeColors = ["#6D8821", "#8FAC34", "#98B333"];
+  const color = treeColors[Math.floor(Math.random() * 3)];
+
+  buildings.push({ x, color });
+}
+
+function generateTree() {
+  const minimumGap = 50;
   const maximumGap = 150;
 
   // X coordinate of the right edge of the furthest tree
@@ -212,6 +270,8 @@ function animate(timestamp) {
           }
 
           generatePlatform();
+          generateBuilding();
+          generateBuilding();
           generateTree();
           generateTree();
         }
@@ -265,6 +325,14 @@ function animate(timestamp) {
         platformHeight + 100 + (window.innerHeight - canvasHeight) / 2;
       if (heroY > maxHeroY) {
         restartButton.style.display = "block";
+
+        if (score > highScore) {
+          highScore = score;
+          localStorage.setItem("highScore", highScore);
+        }
+        // Display the high score
+        console.log("High Score:", highScore);
+
         return;
       }
       break;
@@ -278,6 +346,18 @@ function animate(timestamp) {
 
   lastTimestamp = timestamp;
 }
+
+// Function to update the high score display
+function updateHighScoreDisplay() {
+  const highScoreElement = document.getElementById("highScore");
+  if (highScoreElement) {
+    highScoreElement.innerText = highScore;
+  }
+}
+
+// Initial update of high score display
+updateHighScoreDisplay();
+
 
 // Returns the platform the stick hit (if it didn't hit any stick then return undefined)
 function thePlatformTheStickHits() {
@@ -355,14 +435,16 @@ function drawPlatforms() {
 
 function drawHero() {
   ctx.save();
-  ctx.fillStyle = "black";
+  ctx.fillStyle = "red";
+  ctx.strokeStyle = "black"; // Black border color
+
   ctx.translate(
     heroX - heroWidth / 2,
     heroY + canvasHeight - platformHeight - heroHeight / 2
   );
 
-  // Body
-  drawRoundedRect(
+  // Body with black border
+  drawRoundedRectWithBorder(
     -heroWidth / 2,
     -heroHeight / 2,
     heroWidth,
@@ -375,34 +457,27 @@ function drawHero() {
   ctx.beginPath();
   ctx.arc(legDistance, 11.5, 3, 0, Math.PI * 2, false);
   ctx.fill();
+  ctx.stroke(); // Black border for the first leg
   ctx.beginPath();
   ctx.arc(-legDistance, 11.5, 3, 0, Math.PI * 2, false);
   ctx.fill();
+  ctx.stroke(); // Black border for the second leg
 
   // Eye
   ctx.beginPath();
   ctx.fillStyle = "white";
   ctx.arc(5, -7, 3, 0, Math.PI * 2, false);
   ctx.fill();
+  ctx.stroke();
 
-  // Band
+  // Spacesuit Backpack with black border
   ctx.fillStyle = "red";
-  ctx.fillRect(-heroWidth / 2 - 1, -12, heroWidth + 2, 4.5);
-  ctx.beginPath();
-  ctx.moveTo(-9, -14.5);
-  ctx.lineTo(-17, -18.5);
-  ctx.lineTo(-14, -8.5);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(-10, -10.5);
-  ctx.lineTo(-15, -3.5);
-  ctx.lineTo(-5, -7);
-  ctx.fill();
+  drawRoundedRectWithBorder(-heroWidth / 2 - 4, -heroHeight / 2 + 5, 6, 16, 2);
 
   ctx.restore();
 }
 
-function drawRoundedRect(x, y, width, height, radius) {
+function drawRoundedRectWithBorder(x, y, width, height, radius) {
   ctx.beginPath();
   ctx.moveTo(x, y + radius);
   ctx.lineTo(x, y + height - radius);
@@ -414,7 +489,11 @@ function drawRoundedRect(x, y, width, height, radius) {
   ctx.lineTo(x + radius, y);
   ctx.arcTo(x, y, x, y + radius, radius);
   ctx.fill();
+
+  // Draw the black border
+  ctx.stroke();
 }
+
 
 function drawSticks() {
   sticks.forEach((stick) => {
@@ -438,9 +517,10 @@ function drawSticks() {
 
 function drawBackground() {
   // Draw sky
+  // Gradient for the night sky background
   var gradient = ctx.createLinearGradient(0, 0, 0, window.innerHeight);
-  gradient.addColorStop(0, "#BBD691");
-  gradient.addColorStop(1, "#FEF1E1");
+  gradient.addColorStop(0, "#03030A"); // Dark blue
+  gradient.addColorStop(1, "#0C1446"); // Almost black
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
 
@@ -448,8 +528,23 @@ function drawBackground() {
   drawHill(hill1BaseHeight, hill1Amplitude, hill1Stretch, "#95C629");
   drawHill(hill2BaseHeight, hill2Amplitude, hill2Stretch, "#659F1C");
 
+  // Draw buildings
+  buildings.forEach((building) => drawBuilding(building.x, building.color));
+
   // Draw trees
   trees.forEach((tree) => drawTree(tree.x, tree.color));
+
+  // Draw stars
+  drawStars();
+}
+
+function drawStars() {
+  ctx.fillStyle = "white";
+  for (const star of starCoordinates) {
+    ctx.beginPath();
+    ctx.arc(star.x, star.y, 1, 0, Math.PI * 2);
+    ctx.fill();
+  }
 }
 
 // A hill is a shape under a stretched out sinus wave
@@ -463,6 +558,42 @@ function drawHill(baseHeight, amplitude, stretch, color) {
   ctx.lineTo(window.innerWidth, window.innerHeight);
   ctx.fillStyle = color;
   ctx.fill();
+}
+
+function drawBuilding(x, color) {
+  ctx.save();
+  ctx.translate(
+    (-sceneOffset * backgroundSpeedMultiplier + x) * hill1Stretch,
+    getBuildingY(x, hill1BaseHeight, hill1Amplitude)
+  );
+
+  const buildingWidth = 12;
+  const buildingHeight = 30;
+  const buildingColor = "#5c5c5c"; // Light gray for the building
+
+  // Draw building
+  ctx.fillStyle = buildingColor;
+  ctx.fillRect(
+    -buildingWidth / 2,
+    -buildingHeight,
+    buildingWidth,
+    buildingHeight
+  );
+
+  // Draw windows on the building
+  const windowWidth = 4;
+  const windowHeight = 4;
+  const windowGap = 5;
+  const windowColor = "#ADD8E6"; // Light blue for the windows
+
+  for (let y = -buildingHeight + windowGap; y < 0; y += windowGap + windowHeight) {
+    for (let x = -buildingWidth / 2 + windowGap; x < buildingWidth / 2; x += windowGap + windowWidth) {
+      ctx.fillStyle = windowColor;
+      ctx.fillRect(x, y, windowWidth, windowHeight);
+    }
+  }
+
+  ctx.restore();
 }
 
 function drawTree(x, color) {
@@ -504,6 +635,11 @@ function getHillY(windowX, baseHeight, amplitude, stretch) {
       amplitude +
     sineBaseY
   );
+}
+
+function getBuildingY(x, baseHeight, amplitude) {
+  const sineBaseY = window.innerHeight - baseHeight;
+  return Math.sinus(x) * amplitude + sineBaseY;
 }
 
 function getTreeY(x, baseHeight, amplitude) {

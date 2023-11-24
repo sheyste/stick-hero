@@ -24,6 +24,22 @@ body {
   font-weight: 900;
 }
 
+#score-text {
+  position: absolute;
+  top: 30px;
+  right: 70px;
+  font-size: 2em;
+  font-weight: 900;
+}
+
+#highScoreDisplay {
+  position: absolute;
+  top: 80px;
+  right: 30px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
 #introduction {
   width: 200px;
   height: 150px;
